@@ -1,1 +1,1 @@
-# Function-Space-MCMC-for-Width-BNNs
+# Function-Space MCMC for Wide Bayesian Neural Networks
