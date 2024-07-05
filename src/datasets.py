@@ -42,16 +42,14 @@ def get_dataset(
   tf.config.set_visible_devices([], 'GPU')
 
   ds_builder = tfds.builder(name)
-
   ds_train, ds_test = tfds.as_numpy(
       tfds.load(
-          name + (':3.*.*' if name != 'imdb_reviews' else ''),
+          name + (':3.*.*' if name not in ['imdb_reviews', 'mnist'] else ''),
           split=['train' + ('[:%d]' % n_train if n_train is not None else ''),
                  'test' + ('[:%d]' % n_test if n_test is not None else '')],
           batch_size=-1,
           as_dataset_kwargs={'shuffle_files': False},
           data_dir=data_dir))
-
   train_images, train_labels, test_images, test_labels = (ds_train[input_key],
                                                           ds_train['label'],
                                                           ds_test[input_key],
@@ -101,7 +99,45 @@ def cifar10_tfds(n_train,
       permute_train=False,
       do_flatten_and_normalize=False,
       data_dir=data_dir)
+  # standardise
+  x_mean, x_std = jnp.mean(x_train), jnp.std(x_train)
+  x_train, x_test = ((x - x_mean) / x_std for x in (x_train, x_test))
 
+  if flatten:  # flatten the spatial dimensions
+    x_train, x_test = (x.reshape((len(x), -1)) for x in (x_train, x_test))
+  if regression:  # shift the labels for regression
+    y_train, y_test = (y - 0.1 for y in (y_train, y_test))
+
+  return (x_train, y_train), (x_test, y_test)
+
+
+def mnist_tfds(n_train,
+                 n_test,
+                 flatten=False,
+                 regression=False,
+                 data_dir=None):
+  """Load the mnist dataset using the `neural_tangents` library.
+
+  Args:
+    n_train: Integer. Number of training points.
+    n_test: Integer. Number of test points.
+    flatten: Boolean. Indicates if the images should be flattened.
+    regression: Boolean. Inidicates if the labels should be encoded as one-hot
+      vectors (`False`), or one-hot vectors shifted by `-0.1` to make them
+      centred (`True`).
+    data_dir: Directory from which to load `cifar-10`. (Optional.)
+
+  Returns:
+    Tuple `(x_train, y_train), (x_test, y_test)`.
+  """
+  data_dir = None if data_dir == '' else data_dir  # pylint: disable=g-explicit-bool-comparison
+  x_train, y_train, x_test, y_test = get_dataset(
+      'mnist',
+      n_train=n_train,
+      n_test=n_test,
+      permute_train=False,
+      do_flatten_and_normalize=False,
+      data_dir=data_dir)
   # standardise
   x_mean, x_std = jnp.mean(x_train), jnp.std(x_train)
   x_train, x_test = ((x - x_mean) / x_std for x in (x_train, x_test))
@@ -130,7 +166,7 @@ def synthetic_dataset(n_train, n_test, flatten=False, regression=True):
     # Generate data
     N = n_train + n_test
     z = np.linspace(-3, 3, N)[:, np.newaxis]  # Create z as a 2D array with shape (N, 1)
-    y = np.random.randn(N) + 0.5 * z[:, 0] ** 3 
+    y = np.random.randn(N) - 2 * z[:, 0] ** 3 + 10
     y = np.expand_dims(y, axis=1)
 
     # Split the data into training and test sets
