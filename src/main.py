@@ -232,6 +232,9 @@ def run_experiment(C: config_dict.ConfigDict, m: measurements.Measurements):
 	ds = datasets.cifar10_tfds(
 		 n_train=C.n_train, n_test=C.n_test, flatten=C.architecture == 'fcn',
 		 regression=True, data_dir=C.data_dir)
+	# ds = datasets.mnist_tfds(
+	# 	 n_train=C.n_train, n_test=C.n_test, flatten=C.architecture == 'fcn',
+	# 	 regression=True, data_dir=C.data_dir)
 	# ds = datasets.synthetic_dataset(n_train=C.n_train, n_test=C.n_test)
 
 	if C.parallel:  # shard data equally over devices
