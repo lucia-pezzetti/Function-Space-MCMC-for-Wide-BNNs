@@ -55,9 +55,8 @@ def plot_ess_statistics(DIMS, ess_values, fig, subplot_index):
 
 DIMS = [128, 512, 1024, 2096, 4192]
 labels = [128, 512, 1024, 2048, 4096]
-samplers = ['nngp', 'pcn', 'pcnl']
-stepsize = 0.2
-delta = 0.02
+samplers = ['hmc', 'pcn', 'pcnl']
+stepsize = 0.1
 objects = ['theta', 'preds']
 ess_values = np.zeros([3,5,100])
 fig = plt.figure(figsize=(24, 6))
@@ -66,10 +65,7 @@ for obj in objects:
     for i, sampler in enumerate(samplers):
         print(f'sampler: {sampler}')
         for j in tqdm(range(len(DIMS))):
-            if sampler in ['nngp', 'pcn']:
                 checkpoint_dir = f'results/stepsize_{stepsize}_nunits_{DIMS[j]}_{sampler}'
-            elif sampler == 'pcnl':
-                checkpoint_dir = f'results/delta_{delta}_nunits_{DIMS[j]}_{sampler}'
             samples = load_samples(checkpoint_dir)
             tf_samples = tf.convert_to_tensor(samples[obj], dtype=tf.float32)
 
